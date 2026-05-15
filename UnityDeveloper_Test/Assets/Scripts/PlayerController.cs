@@ -38,6 +38,8 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     public LayerMask GroundMask;
 
+    public bool IsGrounded => isGrounded;
+    
     private CharacterController characterController;
 
     // Current velocity affected by gravity.

@@ -1114,6 +1114,7 @@ MonoBehaviour:
   followDistance: 5
   followHeight: 3
   followSmoothness: 5
+  rotationSmoothness: 10
   mouseSensitivity: 2
   collisionMask:
     serializedVersion: 2
@@ -7526,6 +7527,8 @@ GameObject:
   - component: {fileID: 919132149603880275}
   - component: {fileID: 919132149603880274}
   - component: {fileID: 919132149603880276}
+  - component: {fileID: 919132149603880278}
+  - component: {fileID: 919132149603880277}
   m_Layer: 0
   m_Name: Exo Gray
   m_TagString: Untagged
@@ -7591,6 +7594,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 721c767fa83dbc84bb1221a430bd467a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &919132149603880277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132149603880273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b02940d6216c0ab45a6319bbb31534bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 919132149603880278}
+  playerController: {fileID: 919132149603880274}
+  movementSmoothness: 10
+--- !u!95 &919132149603880278
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132149603880273}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 095a0f26f64a61f4fbfc04c3d472751e, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &927016744737343624
 GameObject:
   m_ObjectHideFlags: 0
