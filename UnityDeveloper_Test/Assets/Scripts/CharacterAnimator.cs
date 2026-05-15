@@ -2,37 +2,67 @@ using UnityEngine;
 
 /// <summary>
 /// Controls character animation states using Animator parameters.
+/// Synchronizes movement, grounded state, and jump triggers
+/// with the Animator Controller.
 /// </summary>
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(PlayerController))]
 public class CharacterAnimator : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField]
-    private Animator animator;
-
-    [SerializeField]
-    private PlayerController playerController;
-
-    [Header("Settings")]
-    [SerializeField]
-    private float animationSmoothness = 10f;
-
-    private float currentSpeed;
+    #region Fields
 
     /// <summary>
-    /// Initializes references.
+    /// Minimum movement magnitude required
+    /// before the character is considered moving.
+    /// </summary>
+    private const float MovementThreshold = 0.01f;
+
+    [Header("References")]
+
+    /// <summary>
+    /// Animator component responsible for playing animations.
+    /// </summary>
+    [SerializeField]
+    private Animator _animator;
+
+    /// <summary>
+    /// Reference to the PlayerController component.
+    /// Used for grounded-state queries.
+    /// </summary>
+    [SerializeField]
+    private PlayerController _playerController;
+
+    [Header("Animation Settings")]
+
+    /// <summary>
+    /// Speed used to smooth animation blending.
+    /// Higher values produce faster transitions.
+    /// </summary>
+    [SerializeField]
+    private float _animationSmoothness = 10f;
+
+    /// <summary>
+    /// Current smoothed movement speed value.
+    /// </summary>
+    private float _currentSpeed;
+
+    #endregion
+
+    #region Unity Lifecycle
+
+    /// <summary>
+    /// Initializes required component references.
     /// </summary>
     private void Awake()
     {
-        if (animator == null)
+        if (_animator == null)
         {
-            animator = GetComponent<Animator>();
+            _animator = GetComponent<Animator>();
         }
 
-        if (playerController == null)
+        if (_playerController == null)
         {
-            playerController = GetComponent<PlayerController>();
+            _playerController = GetComponent<PlayerController>();
         }
     }
 
@@ -46,71 +76,98 @@ public class CharacterAnimator : MonoBehaviour
         HandleJumpAnimation();
     }
 
+    #endregion
+
+    #region Public Methods
+
+    // Intentionally left empty.
+    // Reserved for future public animation API methods.
+
+    #endregion
+
+    #region Private Methods
+
     /// <summary>
-    /// Updates movement animation using WASD input magnitude.
+    /// Updates movement animation blending using
+    /// WASD keyboard input magnitude.
     /// </summary>
     private void UpdateMovementAnimation()
     {
-        float horizontal = 0f;
-        float vertical = 0f;
+        float horizontalInput = 0f;
+        float verticalInput = 0f;
 
+        // Read horizontal movement input.
         if (Input.GetKey(KeyCode.A))
         {
-            horizontal = -1f;
+            horizontalInput = -1f;
         }
 
         if (Input.GetKey(KeyCode.D))
         {
-            horizontal = 1f;
+            horizontalInput = 1f;
         }
 
+        // Read vertical movement input.
         if (Input.GetKey(KeyCode.W))
         {
-            vertical = 1f;
+            verticalInput = 1f;
         }
 
         if (Input.GetKey(KeyCode.S))
         {
-            vertical = -1f;
+            verticalInput = -1f;
         }
 
+        // Convert raw keyboard input into a normalized
+        // movement magnitude used for animation blending.
         Vector2 movementInput =
-            new Vector2(horizontal, vertical);
+            new Vector2(horizontalInput, verticalInput);
 
-        float targetSpeed =
-            movementInput.magnitude;
+        float targetSpeed = movementInput.magnitude;
 
-        currentSpeed = Mathf.Lerp(
-            currentSpeed,
+        // Prevent tiny floating-point fluctuations from
+        // triggering movement transitions unintentionally.
+        if (targetSpeed < MovementThreshold)
+        {
+            targetSpeed = 0f;
+        }
+
+        // Smoothly interpolate animation speed
+        // for cleaner transitions between states.
+        _currentSpeed = Mathf.Lerp(
+            _currentSpeed,
             targetSpeed,
-            animationSmoothness * Time.deltaTime
+            _animationSmoothness * Time.deltaTime
         );
 
-        animator.SetFloat("Speed", currentSpeed);
+        _animator.SetFloat("Speed", _currentSpeed);
     }
 
     /// <summary>
-    /// Updates grounded animation state.
+    /// Updates grounded-state animation parameter.
     /// </summary>
     private void UpdateGroundedAnimation()
     {
-        animator.SetBool(
+        _animator.SetBool(
             "IsGrounded",
-            playerController.IsGrounded
+            _playerController.IsGrounded
         );
     }
 
     /// <summary>
-    /// Triggers jump animation.
+    /// Triggers jump animation when the player
+    /// presses Space while grounded.
     /// </summary>
     private void HandleJumpAnimation()
     {
         if (
             Input.GetKeyDown(KeyCode.Space) &&
-            playerController.IsGrounded
+            _playerController.IsGrounded
         )
         {
-            animator.SetTrigger("Jump");
+            _animator.SetTrigger("Jump");
         }
     }
+
+    #endregion
 }

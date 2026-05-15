@@ -3,29 +3,28 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Manages gravity direction changes for the entire game.
-/// Rotates the level and player orientation smoothly when gravity changes.
+/// Manages gravity direction changes for the game.
+/// Rotates the level smoothly and updates player orientation.
 /// </summary>
 public class GravityManager : MonoBehaviour
 {
     /// <summary>
-    /// Singleton instance of the GravityManager.
+    /// Singleton instance.
     /// </summary>
     public static GravityManager Instance { get; private set; }
 
     /// <summary>
-    /// Event fired whenever gravity changes.
-    /// Sends the new gravity direction.
+    /// Event triggered whenever gravity changes.
     /// </summary>
     public event Action<Vector3> OnGravityChanged;
 
     /// <summary>
-    /// Current gravity direction of the game.
+    /// Current gravity direction.
     /// </summary>
     public Vector3 CurrentGravityDirection => currentGravityDirection;
 
     /// <summary>
-    /// Returns true while gravity transition rotation is occurring.
+    /// Returns true while gravity transition is occurring.
     /// </summary>
     public bool IsTransitioning => isTransitioning;
 
@@ -45,7 +44,7 @@ public class GravityManager : MonoBehaviour
     private bool isTransitioning;
 
     /// <summary>
-    /// Initializes the singleton instance.
+    /// Initializes singleton instance.
     /// </summary>
     private void Awake()
     {
@@ -59,11 +58,10 @@ public class GravityManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Requests a gravity change to a new gravity direction.
+    /// Requests a gravity direction change.
     /// </summary>
     /// <param name="newGravityDirection">
     /// The target gravity direction.
-    /// Example: Vector3.left, Vector3.right, Vector3.up, Vector3.down
     /// </param>
     public void RequestGravityChange(Vector3 newGravityDirection)
     {
@@ -83,20 +81,26 @@ public class GravityManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Smoothly rotates the level and updates player orientation.
+    /// Smoothly rotates the level and updates player gravity orientation.
     /// </summary>
-    /// <param name="newGravityDirection">The new gravity direction.</param>
+    /// <param name="newGravityDirection">
+    /// The target gravity direction.
+    /// </param>
     private IEnumerator RotateGravity(Vector3 newGravityDirection)
     {
         isTransitioning = true;
 
         Vector3 currentUp = -currentGravityDirection;
+
         Vector3 targetUp = -newGravityDirection;
 
         Quaternion startRotation = levelRoot.rotation;
 
         Quaternion gravityRotation =
-            Quaternion.FromToRotation(currentUp, targetUp);
+            Quaternion.FromToRotation(
+                currentUp,
+                targetUp
+            );
 
         Quaternion targetRotation =
             gravityRotation * levelRoot.rotation;
@@ -122,10 +126,13 @@ public class GravityManager : MonoBehaviour
 
         currentGravityDirection = newGravityDirection;
 
-        // Notify player controller of new orientation.
-        playerController.SetGravityDirection(-currentGravityDirection);
+        if (playerController != null)
+        {
+            playerController.SetGravityDirection(
+                -currentGravityDirection
+            );
+        }
 
-        // Fire gravity changed event.
         OnGravityChanged?.Invoke(currentGravityDirection);
 
         isTransitioning = false;

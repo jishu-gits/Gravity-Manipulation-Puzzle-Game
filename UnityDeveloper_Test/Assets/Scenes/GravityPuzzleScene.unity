@@ -194,7 +194,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 60837878}
-  - component: {fileID: 60837877}
+  - component: {fileID: 60837879}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -202,18 +202,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &60837877
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 60837876}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7426723ecd3812b48afd078047f194ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &60837878
 Transform:
   m_ObjectHideFlags: 0
@@ -229,6 +217,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 14
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &60837879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 60837876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7426723ecd3812b48afd078047f194ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerController: {fileID: 919132149603880280}
+  loadNextSceneOnWin: 0
+  nextSceneDelay: 3
 --- !u!1 &65844738
 GameObject:
   m_ObjectHideFlags: 0
@@ -1050,7 +1053,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelRoot: {fileID: 778147663}
-  playerController: {fileID: 919132149603880274}
+  playerController: {fileID: 0}
   rotationDuration: 0.5
 --- !u!4 &318082015
 Transform:
@@ -8644,10 +8647,11 @@ GameObject:
   m_Component:
   - component: {fileID: 543450653259175915}
   - component: {fileID: 919132149603880275}
-  - component: {fileID: 919132149603880274}
   - component: {fileID: 919132149603880276}
   - component: {fileID: 919132149603880278}
   - component: {fileID: 919132149603880277}
+  - component: {fileID: 919132149603880279}
+  - component: {fileID: 919132149603880280}
   m_Layer: 0
   m_Name: Exo Gray
   m_TagString: Player
@@ -8655,26 +8659,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &919132149603880274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 919132149603880273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82b3555e0fa404a4a804dfa7d178ceeb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MoveSpeed: 5
-  JumpHeight: 8
-  GravityStrength: -20
-  GroundCheckRadius: 0.3
-  GroundCheckDistance: 0.4
-  GroundMask:
-    serializedVersion: 2
-    m_Bits: 64
 --- !u!143 &919132149603880275
 CharacterController:
   m_ObjectHideFlags: 0
@@ -8726,7 +8710,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animator: {fileID: 919132149603880278}
-  playerController: {fileID: 919132149603880274}
+  playerController: {fileID: 0}
   animationSmoothness: 10
 --- !u!95 &919132149603880278
 Animator:
@@ -8749,6 +8733,40 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &919132149603880279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132149603880273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1655db26776affd49a7e0f0b51935036, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxFallDuration: 3
+  minimumFallDistance: 15
+--- !u!114 &919132149603880280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132149603880273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82b3555e0fa404a4a804dfa7d178ceeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MoveSpeed: 5
+  JumpHeight: 8
+  GravityStrength: -20
+  GroundCheckRadius: 0.3
+  GroundCheckDistance: 0.4
+  GroundMask:
+    serializedVersion: 2
+    m_Bits: 64
 --- !u!1 &927016744737343624
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,33 +1,61 @@
 using UnityEngine;
 
 /// <summary>
-/// Manages collectible cube tracking and win conditions.
+/// Manages collectible cube tracking,
+/// collection progress, and win conditions.
 /// </summary>
 public class CollectionManager : MonoBehaviour
 {
+    #region Fields
+
     /// <summary>
     /// Singleton instance of the CollectionManager.
     /// </summary>
     public static CollectionManager Instance { get; private set; }
 
+    [Header("Debug")]
+
+    /// <summary>
+    /// Enables collection progress debug logging.
+    /// </summary>
+    [SerializeField]
+    private bool _enableDebugLogs = true;
+
     /// <summary>
     /// Total number of collectible cubes in the scene.
     /// </summary>
-    public int TotalCubes => totalCubes;
+    private int _totalCubes;
 
     /// <summary>
     /// Number of cubes collected by the player.
     /// </summary>
-    public int CollectedCubes => collectedCubes;
-
-    private int totalCubes;
-
-    private int collectedCubes;
-
-    private CollectibleCube[] collectibleCubes;
+    private int _collectedCubes;
 
     /// <summary>
-    /// Initializes singleton and discovers collectible cubes.
+    /// Cached array of collectible cubes discovered in the scene.
+    /// </summary>
+    private CollectibleCube[] _collectibleCubes;
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets the total number of collectible cubes in the scene.
+    /// </summary>
+    public int TotalCubes => _totalCubes;
+
+    /// <summary>
+    /// Gets the number of cubes collected by the player.
+    /// </summary>
+    public int CollectedCubes => _collectedCubes;
+
+    #endregion
+
+    #region Unity Lifecycle
+
+    /// <summary>
+    /// Initializes singleton instance and discovers collectible cubes.
     /// </summary>
     private void Awake()
     {
@@ -39,54 +67,62 @@ public class CollectionManager : MonoBehaviour
 
         Instance = this;
 
-        collectibleCubes =
+        // Automatically discover all collectible cubes
+        // currently active in the scene.
+        _collectibleCubes =
             FindObjectsOfType<CollectibleCube>();
 
-        totalCubes = collectibleCubes.Length;
+        _totalCubes = _collectibleCubes.Length;
 
-        collectedCubes = 0;
+        _collectedCubes = 0;
     }
 
     /// <summary>
-    /// Updates UI after scene loads.
+    /// Initializes HUD values after scene load.
     /// </summary>
     private void Start()
     {
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateCubeCount(
-                collectedCubes,
-                totalCubes
-            );
-        }
+        UpdateCubeCountUI();
     }
 
+    #endregion
+
+    #region Public Methods
+
     /// <summary>
-    /// Handles cube collection events.
+    /// Handles collectible cube collection events.
     /// </summary>
-    /// <param name="cube">The collected cube.</param>
+    /// <param name="cube">
+    /// The cube that was collected.
+    /// </param>
     public void OnCubeCollected(CollectibleCube cube)
     {
-        collectedCubes++;
-
-        Debug.Log(
-            "Collected Cubes: " +
-            collectedCubes +
-            " / " +
-            totalCubes
-        );
-
-        if (UIManager.Instance != null)
+        if (cube == null)
         {
-            UIManager.Instance.UpdateCubeCount(
-                collectedCubes,
-                totalCubes
+            return;
+        }
+
+        _collectedCubes++;
+
+        if (_enableDebugLogs)
+        {
+            Debug.Log(
+                "Collected Cubes: " +
+                _collectedCubes +
+                " / " +
+                _totalCubes
             );
         }
 
+        UpdateCubeCountUI();
+
+        // Trigger game win when all cubes are collected.
         if (AreAllCubesCollected())
         {
-            Debug.Log("All cubes collected!");
+            if (_enableDebugLogs)
+            {
+                Debug.Log("All cubes collected!");
+            }
 
             if (GameManager.Instance != null)
             {
@@ -96,13 +132,35 @@ public class CollectionManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns whether all cubes have been collected.
+    /// Returns whether all collectible cubes
+    /// in the scene have been collected.
     /// </summary>
     /// <returns>
-    /// True if all cubes are collected.
+    /// True if all cubes are collected;
+    /// otherwise false.
     /// </returns>
     public bool AreAllCubesCollected()
     {
-        return collectedCubes >= totalCubes;
+        return _collectedCubes >= _totalCubes;
     }
+
+    #endregion
+
+    #region Private Methods
+
+    /// <summary>
+    /// Updates the cube collection count on the HUD.
+    /// </summary>
+    private void UpdateCubeCountUI()
+    {
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateCubeCount(
+                _collectedCubes,
+                _totalCubes
+            );
+        }
+    }
+
+    #endregion
 }

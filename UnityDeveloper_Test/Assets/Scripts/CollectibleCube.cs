@@ -2,79 +2,130 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Handles collectible cube behavior.
-/// Detects player collection and plays collection animation.
+/// Handles collectible cube behavior,
+/// collection detection, and destruction animation.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class CollectibleCube : MonoBehaviour
 {
+    #region Fields
+
+    /// <summary>
+    /// Minimum scale value used when shrinking the cube.
+    /// </summary>
+    private static readonly Vector3 MinScale = Vector3.zero;
+
+    [Header("Collection Animation")]
+
+    /// <summary>
+    /// Duration of the scale-down collection animation.
+    /// </summary>
+    [SerializeField]
+    private float _collectAnimationDuration = 0.2f;
+
+    /// <summary>
+    /// Cached collider reference.
+    /// </summary>
+    private Collider _cubeCollider;
+
+    /// <summary>
+    /// Tracks whether the cube has already been collected.
+    /// Prevents duplicate collection events.
+    /// </summary>
+    private bool _isCollected;
+
+    #endregion
+
+    #region Properties
+
     /// <summary>
     /// Returns whether this cube has already been collected.
     /// </summary>
-    public bool IsCollected => isCollected;
+    public bool IsCollected => _isCollected;
 
-    [Header("Animation")]
-    [SerializeField]
-    private float collectAnimationDuration = 0.2f;
+    #endregion
 
-    private bool isCollected;
-
-    private Collider cubeCollider;
+    #region Unity Lifecycle
 
     /// <summary>
-    /// Initializes component references.
+    /// Initializes required component references.
     /// </summary>
     private void Awake()
     {
-        cubeCollider = GetComponent<Collider>();
+        _cubeCollider = GetComponent<Collider>();
 
-        cubeCollider.isTrigger = true;
+        // Ensure the collider behaves as a trigger
+        // for overlap-based collection detection.
+        _cubeCollider.isTrigger = true;
     }
 
     /// <summary>
-    /// Detects player collection.
+    /// Detects player collision and triggers collection.
     /// </summary>
-    /// <param name="other">The colliding object.</param>
+    /// <param name="other">
+    /// Collider that entered the trigger.
+    /// </param>
     private void OnTriggerEnter(Collider other)
     {
-        if (isCollected)
+        // Prevent duplicate collection processing.
+        if (_isCollected)
         {
             return;
         }
 
+        // Ignore collisions from non-player objects.
         if (!other.CompareTag("Player"))
         {
             return;
         }
 
-        isCollected = true;
+        _isCollected = true;
 
-        CollectionManager.Instance.OnCubeCollected(this);
+        // Notify collection manager.
+        if (CollectionManager.Instance != null)
+        {
+            CollectionManager.Instance.OnCubeCollected(this);
+        }
 
+        // Begin visual collection animation.
         StartCoroutine(PlayCollectAnimation());
     }
 
+    #endregion
+
+    #region Public Methods
+
+    // Intentionally left empty.
+    // Reserved for future external collectible interactions.
+
+    #endregion
+
+    #region Private Methods
+
     /// <summary>
-    /// Plays a simple scale-down animation before destroying the cube.
+    /// Plays a scale-down animation before destroying the cube.
     /// </summary>
+    /// <returns>
+    /// Coroutine enumerator.
+    /// </returns>
     private IEnumerator PlayCollectAnimation()
     {
         Vector3 startScale = transform.localScale;
 
-        Vector3 targetScale = Vector3.zero;
+        float elapsedTime = 0f;
 
-        float elapsed = 0f;
-
-        while (elapsed < collectAnimationDuration)
+        while (elapsedTime < _collectAnimationDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsedTime += Time.deltaTime;
 
-            float t = elapsed / collectAnimationDuration;
+            float normalizedTime =
+                elapsedTime / _collectAnimationDuration;
 
+            // Smoothly shrink the cube to zero scale.
             transform.localScale = Vector3.Lerp(
                 startScale,
-                targetScale,
-                t
+                MinScale,
+                normalizedTime
             );
 
             yield return null;
@@ -82,4 +133,6 @@ public class CollectibleCube : MonoBehaviour
 
         Destroy(gameObject);
     }
+
+    #endregion
 }

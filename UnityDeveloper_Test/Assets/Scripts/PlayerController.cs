@@ -12,7 +12,10 @@ public class PlayerController : MonoBehaviour
     /// Movement speed of the player.
     /// </summary>
     public float MoveSpeed = 5f;
-
+    public void SetInputEnabled(bool enabled)
+    {
+        inputEnabled = enabled;
+    }
     /// <summary>
     /// Jump height applied opposite to gravity.
     /// </summary>
@@ -41,7 +44,7 @@ public class PlayerController : MonoBehaviour
     public bool IsGrounded => isGrounded;
     
     private CharacterController characterController;
-
+    private bool inputEnabled = true;
     // Current velocity affected by gravity.
     private Vector3 velocity;
 
@@ -67,6 +70,10 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        if (!inputEnabled)
+        {
+            return;
+        }
         HandleGroundCheck();
         HandleMovement();
         HandleJump();
