@@ -1,211 +1,98 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// Third-person camera controller for a gravity manipulation puzzle game.
-/// Smoothly follows and rotates around the player while adapting to gravity changes.
+/// Third-person camera that orbits the player.
+/// On gravity change, smoothly rolls (Z) or pitches (X)
+/// around the player pivot to match the new up direction.
 /// </summary>
 public class ThirdPersonCamera : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField]
-    private Transform target;
+    [Header("Target")]
+    [SerializeField] private Transform target;
 
-    [Header("Follow Settings")]
-    [SerializeField]
-    private float followDistance = 7f;
+    [Header("Orbit")]
+    [SerializeField] private float distance     = 6f;
+    [SerializeField] private float height       = 2.5f;
+    [SerializeField] private float mouseSensitivity = 2f;
 
-    [SerializeField]
-    private float followHeight = 2f;
+    [Header("Smoothing")]
+    [SerializeField] private float followSpeed  = 8f;
+    [SerializeField] private float gravityRollSpeed = 5f;   // Z / X roll speed
 
-    [SerializeField]
-    private float followSmoothness = 5f;
+    // ── state ──────────────────────────────────────────────
+    private float   _yaw             = 0f;
 
-    [SerializeField]
-    private float rotationSmoothness = 10f;
+    // Target up is set instantly on gravity change.
+    // Smoothed up interpolates toward it — drives the roll/pitch.
+    private Vector3 _targetGravityUp = Vector3.up;
+    private Vector3 _smoothedGravityUp = Vector3.up;
 
-    [Header("Orbit Settings")]
-    [SerializeField]
-    private float mouseSensitivity = 2f;
-
-    [Header("Collision")]
-    [SerializeField]
-    private LayerMask collisionMask;
-
-    [SerializeField]
-    private float collisionBuffer = 0.2f;
-
-    private Vector3 currentUp = Vector3.up;
-
-    private float yaw;
-
-    /// <summary>
-    /// Subscribes to gravity change events.
-    /// </summary>
-    private void OnEnable()
+    // ── lifecycle ──────────────────────────────────────────
+    private void Start()
     {
         if (GravityManager.Instance != null)
-        {
-            GravityManager.Instance.OnGravityChanged += HandleGravityChanged;
-        }
+            GravityManager.Instance.OnGravityChanged += OnGravityChanged;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible   = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (GravityManager.Instance != null)
+            GravityManager.Instance.OnGravityChanged -= OnGravityChanged;
     }
 
     /// <summary>
-    /// Unsubscribes from gravity change events.
+    /// Receives the new UP vector from GravityManager.
+    /// GravityManager.OnGravityChanged fires currentUp (not down).
     /// </summary>
-    private void OnDisable()
+    private void OnGravityChanged(Vector3 newUp)
     {
-        if (GravityManager.Instance != null)
-        {
-            GravityManager.Instance.OnGravityChanged -= HandleGravityChanged;
-        }
+        _targetGravityUp = newUp;         // store; smoothing happens in LateUpdate
     }
 
-    /// <summary>
-    /// Handles camera follow and orbit logic every frame.
-    /// </summary>
+    // ── camera update ──────────────────────────────────────
     private void LateUpdate()
     {
-        if (target == null)
-        {
-            return;
-        }
+        if (target == null) return;
 
-        HandleMouseOrbit();
-        UpdateCameraPosition();
-    }
+        // 1. Smoothly slerp the gravity up — this drives the roll / pitch.
+        //    Slerp on the unit sphere naturally rolls Z for left/right
+        //    and pitches X for forward/back gravity.
+        _smoothedGravityUp = Vector3.Slerp(
+            _smoothedGravityUp,
+            _targetGravityUp,
+            Time.deltaTime * gravityRollSpeed
+        );
 
-    /// <summary>
-    /// Handles horizontal orbit input using mouse X movement.
-    /// </summary>
-    private void HandleMouseOrbit()
-    {
-        float mouseX = Input.GetAxis("Mouse X");
+        // 2. Mouse horizontal orbit around the smoothed up axis.
+        _yaw += Input.GetAxis("Mouse X") * mouseSensitivity;
 
-        yaw += mouseX * mouseSensitivity;
-    }
+        // 3. Build camera orientation:
+        //    a) Align world-up with the smoothed gravity up  →  handles Z / X roll
+        //    b) Apply yaw around that new up axis            →  horizontal orbit
+        Quaternion gravityAlign = Quaternion.FromToRotation(Vector3.up, _smoothedGravityUp);
+        Quaternion yawRot       = Quaternion.AngleAxis(_yaw, _smoothedGravityUp);
+        Quaternion desiredRot   = yawRot * gravityAlign;
 
-    /// <summary>
-    /// Updates camera position, collision handling, and look direction.
-    /// </summary>
-    private void UpdateCameraPosition()
-    {
-        // Create orbit rotation around the gravity-relative up direction.
-        Quaternion orbitRotation =
-            Quaternion.AngleAxis(yaw, currentUp);
+        // 4. Position: fixed offset from player pivot using rotated camera axes.
+        //    new Vector3(0, height, -distance) is always in the camera's own space,
+        //    so the pivot (player) never moves — only the camera rotates around it.
+        Vector3 desiredPos = target.position
+                           + desiredRot * new Vector3(0f, height, -distance);
 
-        // Independent orbit direction.
-        // This avoids the camera rotating awkwardly with the player/world.
-        Vector3 orbitDirection =
-            orbitRotation * Vector3.back;
-
-        // Camera backward offset.
-        Vector3 backwardOffset =
-            orbitDirection * followDistance;
-
-        // Camera upward offset relative to current gravity orientation.
-        Vector3 upwardOffset =
-            currentUp * followHeight;
-
-        // Final desired camera position.
-        Vector3 desiredPosition =
-            target.position +
-            backwardOffset +
-            upwardOffset;
-
-        // Slightly above player center for better framing.
-        Vector3 lookTarget =
-            target.position + currentUp * 1.5f;
-
-        // Collision prevention raycast.
-        // If geometry blocks the camera, move camera closer.
-        Vector3 rayDirection =
-            desiredPosition - lookTarget;
-
-        float rayDistance = rayDirection.magnitude;
-
-        rayDirection.Normalize();
-
-        if (
-            Physics.Raycast(
-                lookTarget,
-                rayDirection,
-                out RaycastHit hit,
-                rayDistance,
-                collisionMask
-            )
-        )
-        {
-            desiredPosition =
-                hit.point - rayDirection * collisionBuffer;
-        }
-
-        // Smooth camera position movement.
+        // 5. Smooth position follow.
         transform.position = Vector3.Lerp(
             transform.position,
-            desiredPosition,
-            followSmoothness * Time.deltaTime
+            desiredPos,
+            Time.deltaTime * followSpeed
         );
 
-        // Create gravity-relative camera rotation.
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                lookTarget - transform.position,
-                currentUp
-            );
-
-        // Smoothly align camera orientation.
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRotation,
-            rotationSmoothness * Time.deltaTime
-        );
-    }
-
-    /// <summary>
-    /// Handles gravity direction updates from GravityManager.
-    /// Smoothly reorients the camera up direction.
-    /// </summary>
-    /// <param name="newGravityDirection">
-    /// The new gravity direction.
-    /// </param>
-    private void HandleGravityChanged(Vector3 newGravityDirection)
-    {
-        StopAllCoroutines();
-
-        StartCoroutine(
-            SmoothAlignCameraUp(-newGravityDirection.normalized)
-        );
-    }
-
-    /// <summary>
-    /// Smoothly aligns the camera's up direction during gravity transitions.
-    /// </summary>
-    /// <param name="targetUp">
-    /// The target up direction.
-    /// </param>
-    private IEnumerator SmoothAlignCameraUp(Vector3 targetUp)
-    {
-        Vector3 startUp = currentUp;
-
-        float elapsed = 0f;
-        float duration = 0.5f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-
-            float t = elapsed / duration;
-
-            currentUp = Vector3.Slerp(
-                startUp,
-                targetUp,
-                t
-            ).normalized;
-
-            yield return null;
-        }
-
-        currentUp = targetUp;
+        // 6. Look at a point one unit above the player in the smoothed-up direction.
+        //    Passing _smoothedGravityUp as the up-vector is what constrains
+        //    the roll to Z / X and prevents the camera from spinning on Y.
+        Vector3 lookTarget = target.position + _smoothedGravityUp * 1f;
+        transform.LookAt(lookTarget, _smoothedGravityUp);
     }
 }

@@ -2,139 +2,94 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Manages gravity direction changes for the game.
-/// Rotates the level smoothly and updates player orientation.
-/// </summary>
 public class GravityManager : MonoBehaviour
 {
-    /// <summary>
-    /// Singleton instance.
-    /// </summary>
-    public static GravityManager Instance { get; private set; }
+    public static GravityManager Instance;
 
-    /// <summary>
-    /// Event triggered whenever gravity changes.
-    /// </summary>
     public event Action<Vector3> OnGravityChanged;
 
-    /// <summary>
-    /// Current gravity direction.
-    /// </summary>
-    public Vector3 CurrentGravityDirection => currentGravityDirection;
-
-    /// <summary>
-    /// Returns true while gravity transition is occurring.
-    /// </summary>
-    public bool IsTransitioning => isTransitioning;
-
-    [Header("References")]
     [SerializeField]
     private Transform levelRoot;
 
     [SerializeField]
-    private PlayerController playerController;
+    private PlayerController player;
 
-    [Header("Settings")]
     [SerializeField]
     private float rotationDuration = 0.5f;
 
-    private Vector3 currentGravityDirection = Vector3.down;
+    public bool IsTransitioning { get; private set; }
 
-    private bool isTransitioning;
+    private Vector3 currentUp = Vector3.up;
 
-    /// <summary>
-    /// Initializes singleton instance.
-    /// </summary>
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
         Instance = this;
     }
 
-    /// <summary>
-    /// Requests a gravity direction change.
-    /// </summary>
-    /// <param name="newGravityDirection">
-    /// The target gravity direction.
-    /// </param>
-    public void RequestGravityChange(Vector3 newGravityDirection)
+    public void RequestGravityChange(
+        Vector3 targetGravity
+    )
     {
-        if (isTransitioning)
+        if (IsTransitioning)
         {
             return;
         }
 
-        newGravityDirection = newGravityDirection.normalized;
-
-        if (newGravityDirection == currentGravityDirection)
-        {
-            return;
-        }
-
-        StartCoroutine(RotateGravity(newGravityDirection));
+        StartCoroutine(
+            RotateWorldRoutine(
+                targetGravity.normalized
+            )
+        );
     }
 
-    /// <summary>
-    /// Smoothly rotates the level and updates player gravity orientation.
-    /// </summary>
-    /// <param name="newGravityDirection">
-    /// The target gravity direction.
-    /// </param>
-    private IEnumerator RotateGravity(Vector3 newGravityDirection)
+    private IEnumerator RotateWorldRoutine(
+        Vector3 targetGravity
+    )
     {
-        isTransitioning = true;
+        IsTransitioning = true;
 
-        Vector3 currentUp = -currentGravityDirection;
+        Vector3 targetUp =
+            -targetGravity;
 
-        Vector3 targetUp = -newGravityDirection;
+        Quaternion startRotation =
+            levelRoot.rotation;
 
-        Quaternion startRotation = levelRoot.rotation;
-
-        Quaternion gravityRotation =
+        Quaternion rotationDelta =
             Quaternion.FromToRotation(
                 currentUp,
                 targetUp
             );
 
         Quaternion targetRotation =
-            gravityRotation * levelRoot.rotation;
+            rotationDelta *
+            levelRoot.rotation;
 
-        float elapsedTime = 0f;
+        float elapsed = 0f;
 
-        while (elapsedTime < rotationDuration)
+        while (elapsed < rotationDuration)
         {
-            elapsedTime += Time.deltaTime;
+            elapsed += Time.deltaTime;
 
-            float t = elapsedTime / rotationDuration;
-
-            levelRoot.rotation = Quaternion.Slerp(
-                startRotation,
-                targetRotation,
-                t
-            );
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / rotationDuration);
+            
+            levelRoot.rotation =
+                Quaternion.Slerp(
+                    startRotation,
+                    targetRotation,
+                    t
+                );
 
             yield return null;
         }
 
         levelRoot.rotation = targetRotation;
 
-        currentGravityDirection = newGravityDirection;
+        currentUp = targetUp;
 
-        if (playerController != null)
-        {
-            playerController.SetGravityDirection(
-                -currentGravityDirection
-            );
-        }
+        player.SetGravityUp(currentUp);
 
-        OnGravityChanged?.Invoke(currentGravityDirection);
+        OnGravityChanged?.Invoke(currentUp);
 
-        isTransitioning = false;
+        IsTransitioning = false;
     }
 }
